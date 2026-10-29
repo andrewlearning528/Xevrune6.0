@@ -1,0 +1,639 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10111a">
+<title>Xevrune 6.0 — Your AI Assistant</title>
+<style>
+:root {
+  --bg: #10111a;
+  --panel: #171925;
+  --panel2: #202333;
+  --text: #f4f5ff;
+  --muted: #9ba1b8;
+  --accent: #8b7cff;
+  --accent2: #5b8cff;
+  --border: rgba(255,255,255,.09);
+  --user: #343052;
+  --good: #72dfb1;
+}
+body.light {
+  --bg: #f4f5fb;
+  --panel: #ffffff;
+  --panel2: #eceefa;
+  --text: #202238;
+  --muted: #69708a;
+  --accent: #6855e8;
+  --accent2: #4778eb;
+  --border: rgba(25,30,60,.12);
+  --user: #e7e3ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+}
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.app { height: 100dvh; display: flex; }
+.sidebar {
+  width: 270px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 14px;
+  flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 11px; padding: 5px 7px 22px; }
+.logo {
+  width: 40px; height: 40px; border-radius: 14px;
+  display: grid; place-items: center;
+  color: white; font-size: 22px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 5px 22px #7466ff44;
+}
+.brand h1 { font-size: 19px; margin: 0; letter-spacing: -.5px; }
+.brand small { color: var(--muted); font-size: 11px; }
+.primary, .secondary, .icon-btn {
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 11px 13px;
+  color: var(--text); background: var(--panel2);
+}
+.primary {
+  color: white; border: 0;
+  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  font-weight: 650;
+}
+.primary:hover { filter: brightness(1.08); }
+.secondary:hover, .icon-btn:hover { border-color: var(--accent); }
+.side-label {
+  color: var(--muted); font-size: 11px; font-weight: 750;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 22px 8px 9px;
+}
+.history-list { overflow-y: auto; min-height: 30px; }
+.history-item {
+  width: 100%; border: 0; background: transparent; color: var(--muted);
+  padding: 10px; border-radius: 9px; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-bottom: 3px;
+}
+.history-item:hover, .history-item.active { background: var(--panel2); color: var(--text); }
+.side-bottom { margin-top: auto; border-top: 1px solid var(--border); padding-top: 12px; }
+.side-bottom button { width: 100%; text-align: left; margin: 3px 0; }
+.local-note { color: var(--muted); font-size: 11px; line-height: 1.5; padding: 12px 6px 2px; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  height: 68px; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.top-title { font-size: 14px; font-weight: 700; }
+.status { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.status-dot {
+  display: inline-block; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--good); margin-right: 5px;
+}
+.top-actions { display: flex; gap: 8px; }
+.icon-btn { width: 39px; height: 39px; padding: 0; display: grid; place-items: center; }
+.chat { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+.chat-inner { width: min(800px, 100%); margin: auto; padding: 30px 23px 25px; }
+.welcome { text-align: center; padding: 9vh 0 25px; }
+.welcome-logo {
+  width: 65px; height: 65px; border-radius: 23px; margin: 0 auto 20px;
+  display: grid; place-items: center; font-size: 32px; color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+.welcome h2 { font-size: clamp(27px, 4vw, 39px); letter-spacing: -1.3px; margin: 0 0 12px; }
+.gradient-text {
+  background: linear-gradient(90deg, var(--accent), #67b6ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.welcome p { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 0 auto; max-width: 430px; }
+.suggestions {
+  display: grid; grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 10px; max-width: 570px; margin: 26px auto 0;
+}
+.suggestion {
+  text-align: left; background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 14px; padding: 14px;
+}
+.suggestion:hover { border-color: var(--accent); transform: translateY(-1px); }
+.suggestion strong { display: block; font-size: 13px; margin-bottom: 5px; }
+.suggestion span { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.message { display: flex; gap: 12px; margin: 22px 0; align-items: flex-start; }
+.avatar {
+  flex: 0 0 32px; width: 32px; height: 32px; border-radius: 11px;
+  display: grid; place-items: center; font-size: 14px; font-weight: 800;
+  background: var(--panel2);
+}
+.message.assistant .avatar { color: white; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.bubble { min-width: 0; max-width: 100%; line-height: 1.75; font-size: 14px; overflow-wrap: anywhere; }
+.message.user .bubble { background: var(--user); padding: 10px 14px; border-radius: 5px 14px 14px 14px; }
+.message .who { font-size: 11px; font-weight: 750; color: var(--muted); margin: 0 0 5px; }
+.message .body { white-space: pre-wrap; }
+.message .body code { background: var(--panel2); border-radius: 5px; padding: 2px 5px; }
+.composer-area { padding: 12px 20px 15px; }
+.composer-wrap { width: min(800px, 100%); margin: auto; }
+.composer {
+  display: flex; align-items: flex-end; gap: 10px;
+  border: 1px solid var(--border); background: var(--panel);
+  border-radius: 19px; padding: 10px 10px 10px 16px;
+  box-shadow: 0 8px 30px #0000000c;
+}
+.composer:focus-within { border-color: var(--accent); }
+#prompt {
+  flex: 1; resize: none; border: 0; outline: 0; background: transparent;
+  color: var(--text); padding: 7px 0; max-height: 150px; min-height: 25px;
+  line-height: 1.5;
+}
+#prompt::placeholder { color: var(--muted); }
+.send {
+  width: 39px; height: 39px; flex-shrink: 0; border-radius: 12px;
+  border: 0; color: white; background: linear-gradient(135deg, var(--accent), var(--accent2));
+  font-size: 19px;
+}
+.send:disabled { opacity: .5; cursor: wait; }
+.disclaimer { color: var(--muted); font-size: 10px; text-align: center; padding-top: 9px; }
+.mobile-brand, .mobile-menu { display: none; }
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 10; display: none;
+  align-items: center; justify-content: center; padding: 18px;
+  background: #0009;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  width: min(480px, 100%); max-height: 85dvh; overflow: auto;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 18px; padding: 22px;
+}
+.modal h3 { margin: 0 0 8px; }
+.modal p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.modal textarea, .modal input {
+  width: 100%; background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px; padding: 11px;
+  margin: 7px 0 12px;
+}
+.modal textarea { min-height: 120px; resize: vertical; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.memory-list { display: grid; gap: 8px; margin: 15px 0; }
+.memory-row { background: var(--panel2); padding: 10px; border-radius: 9px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+.memory-row button { background: transparent; border: 0; color: var(--muted); }
+.toast { color: var(--good); font-size: 12px; min-height: 18px; margin-top: 7px; }
+@media(max-width:720px) {
+  .sidebar { display: none; }
+  .topbar { height: 60px; padding: 0 13px; }
+  .mobile-brand { display: flex; align-items: center; gap: 8px; font-weight: 750; font-size: 14px; }
+  .mobile-brand .logo { width: 32px; height: 32px; border-radius: 10px; font-size: 17px; }
+  .mobile-menu { display: grid; }
+  .top-title { display: none; }
+  .chat-inner { padding: 20px 15px; }
+  .welcome { padding-top: 6vh; }
+  .suggestions { grid-template-columns: 1fr; }
+  .suggestion { padding: 12px; }
+  .composer-area { padding: 8px 10px 12px; }
+  .message { gap: 9px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">X</div>
+      <div><h1>Xevrune <span style="color:var(--accent)">6.0</span></h1><small>Your AI workspace</small></div>
+    </div>
+    <button class="primary" id="newChat">＋ New chat</button>
+    <div class="side-label">Recent conversations</div>
+    <div class="history-list" id="historyList"></div>
+    <div class="side-bottom">
+      <button class="secondary" id="memoryButton">✧ My memories</button>
+      <button class="secondary" id="calcButton">＋ Calculator</button>
+      <button class="secondary" id="themeButton">◐ Switch appearance</button>
+      <div class="local-note">Xevrune 6.0 · Prototype<br>Chats and memories are stored in this browser.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="mobile-menu icon-btn" id="mobileNew" aria-label="New chat">＋</button>
+      <div class="mobile-brand"><div class="logo">X</div> Xevrune 6.0</div>
+      <div class="top-title">
+        Xevrune Assistant
+        <div class="status"><span class="status-dot"></span><span id="statusText">Local demo mode</span></div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="topMemory" title="My memories" aria-label="My memories">✧</button>
+        <button class="icon-btn" id="topTheme" title="Switch theme" aria-label="Switch theme">◐</button>
+      </div>
+    </header>
+
+    <section class="chat" id="chat" aria-live="polite">
+      <div class="chat-inner" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-logo">✦</div>
+          <h2>What can we <span class="gradient-text">explore?</span></h2>
+          <p>Welcome to Xevrune 6.0. Ask a question, work through an idea, or use one of the tools below.</p>
+          <div class="suggestions">
+            <button class="suggestion" data-prompt="Explain a difficult topic in simple words."><strong>✧ Learn something</strong><span>Make a complicated topic easier to understand.</span></button>
+            <button class="suggestion" data-prompt="Help me brainstorm a creative project."><strong>✎ Get creative</strong><span>Explore ideas and plan a project.</span></button>
+            <button class="suggestion" data-prompt="Help me write a clear and polished paragraph."><strong>⌁ Improve my writing</strong><span>Make your writing clearer and more natural.</span></button>
+            <button class="suggestion" data-prompt="Calculate 125 * 48"><strong>＋ Use calculator</strong><span>Try a calculation or solve a math problem.</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="composer-area">
+      <div class="composer-wrap">
+        <form class="composer" id="chatForm">
+          <textarea id="prompt" rows="1" placeholder="Message Xevrune..." aria-label="Message Xevrune"></textarea>
+          <button class="send" id="sendButton" type="submit" aria-label="Send message">↑</button>
+        </form>
+        <div class="disclaimer">Xevrune 6.0 · Local prototype · Verify important information</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="memoryModal" role="dialog" aria-modal="true" aria-labelledby="memoryTitle">
+  <div class="modal">
+    <h3 id="memoryTitle">✧ My memories</h3>
+    <p>Save notes that you want this browser-based prototype to include when preparing a response. Do not save passwords or sensitive information.</p>
+    <label for="memoryInput">Add a memory or preference</label>
+    <input id="memoryInput" maxlength="300" placeholder="Example: I prefer simple explanations">
+    <div class="modal-actions"><button class="secondary" id="closeMemory">Close</button><button class="primary" id="addMemory">Save memory</button></div>
+    <div class="memory-list" id="memoryList"></div>
+    <div class="toast" id="memoryToast"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="calcModal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
+  <div class="modal">
+    <h3 id="calcTitle">＋ Calculator</h3>
+    <p>Enter an arithmetic expression using numbers, parentheses, +, −, ×, ÷, or %.</p>
+    <label for="calcInput">Expression</label>
+    <input id="calcInput" placeholder="(125 + 25) * 4">
+    <div class="modal-actions"><button class="secondary" id="closeCalc">Close</button><button class="primary" id="calculate">Calculate</button></div>
+    <p id="calcResult" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/*
+  XEVRUNE 6.0
+  This file is the front end, not a full language model.
+  Later, set WORKER_URL to your Cloudflare Worker URL.
+  Never put AI provider secret keys in this file.
+*/
+const WORKER_URL = ""; // Add the Worker URL later, after its API is ready.
+
+const $ = id => document.getElementById(id);
+const CHAT_KEY = "xevrune6_chats_v1";
+const ACTIVE_KEY = "xevrune6_active_v1";
+const MEMORY_KEY = "xevrune6_memories_v1";
+const THEME_KEY = "xevrune6_theme_v1";
+
+let chats = load(CHAT_KEY, []);
+let activeId = localStorage.getItem(ACTIVE_KEY);
+let memories = load(MEMORY_KEY, []);
+let busy = false;
+
+function load(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return value ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function save(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); }
+  catch { toast("Storage is full. Try removing old chats or memories."); }
+}
+function makeId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function activeChat() {
+  return chats.find(c => c.id === activeId);
+}
+function createChat() {
+  const chat = { id: makeId(), title: "New conversation", messages: [], updated: Date.now() };
+  chats.unshift(chat);
+  activeId = chat.id;
+  localStorage.setItem(ACTIVE_KEY, activeId);
+  persist();
+  render();
+}
+function persist() {
+  save(CHAT_KEY, chats);
+  if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
+  renderHistory();
+}
+function renderHistory() {
+  const list = $("historyList");
+  list.replaceChildren();
+  [...chats].sort((a,b) => b.updated - a.updated).forEach(chat => {
+    const button = document.createElement("button");
+    button.className = "history-item" + (chat.id === activeId ? " active" : "");
+    button.textContent = chat.title || "New conversation";
+    button.title = chat.title || "New conversation";
+    button.onclick = () => {
+      activeId = chat.id;
+      localStorage.setItem(ACTIVE_KEY, activeId);
+      render();
+    };
+    list.append(button);
+  });
+}
+function render() {
+  const root = $("messages");
+  root.replaceChildren();
+  const chat = activeChat();
+  if (!chat || chat.messages.length === 0) {
+    const welcome = $("welcome");
+    root.append(welcome);
+  } else {
+    chat.messages.forEach(message => root.append(makeMessage(message)));
+  }
+  renderHistory();
+  scrollToBottom();
+}
+function makeMessage(message) {
+  const row = document.createElement("div");
+  row.className = "message " + (message.role === "user" ? "user" : "assistant");
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = message.role === "user" ? "Y" : "X";
+  const content = document.createElement("div");
+  content.className = "bubble";
+  const who = document.createElement("div");
+  who.className = "who";
+  who.textContent = message.role === "user" ? "YOU" : "XEVRUNE";
+  const body = document.createElement("div");
+  body.className = "body";
+  body.textContent = message.content;
+  content.append(who, body);
+  row.append(avatar, content);
+  return row;
+}
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    $("chat").scrollTop = $("chat").scrollHeight;
+  });
+}
+function addMessage(role, content) {
+  const chat = activeChat();
+  if (!chat) return;
+  chat.messages.push({ role, content });
+  chat.updated = Date.now();
+  if (role === "user" && chat.title === "New conversation") {
+    chat.title = content.slice(0, 36) + (content.length > 36 ? "…" : "");
+  }
+  persist();
+  render();
+}
+function setBusy(value) {
+  busy = value;
+  $("sendButton").disabled = value;
+  $("prompt").disabled = value;
+  $("statusText").textContent = value ? "Thinking…" :
+    (WORKER_URL ? "Connected to AI service" : "Local demo mode");
+}
+function toast(message) {
+  $("memoryToast").textContent = message;
+}
+function escapeError(error) {
+  return error && error.message ? error.message : "Something went wrong.";
+}
+
+/* A safe arithmetic parser. No eval() or Function() is used. */
+function calculateExpression(input) {
+  const tokens = input.match(/\d*\.?\d+(?:e[+-]?\d+)?|[()+\-*/%]/gi);
+  if (!tokens || tokens.join("") !== input.replace(/\s+/g, "")) {
+    throw new Error("Use numbers and basic arithmetic operators only.");
+  }
+  let pos = 0;
+  function expression() {
+    let value = term();
+    while (tokens[pos] === "+" || tokens[pos] === "-") {
+      const op = tokens[pos++];
+      const next = term();
+      value = op === "+" ? value + next : value - next;
+    }
+    return value;
+  }
+  function term() {
+    let value = factor();
+    while (["*", "/", "%"].includes(tokens[pos])) {
+      const op = tokens[pos++];
+      const next = factor();
+      if ((op === "/" || op === "%") && next === 0) throw new Error("Cannot divide by zero.");
+      if (op === "*") value *= next;
+      if (op === "/") value /= next;
+      if (op === "%") value %= next;
+    }
+    return value;
+  }
+  function factor() {
+    if (tokens[pos] === "+") { pos++; return factor(); }
+    if (tokens[pos] === "-") { pos++; return -factor(); }
+    if (tokens[pos] === "(") {
+      pos++;
+      const value = expression();
+      if (tokens[pos++] !== ")") throw new Error("Check your parentheses.");
+      return value;
+    }
+    const token = tokens[pos++];
+    if (!token || !/^\d*\.?\d+(?:e[+-]?\d+)?$/i.test(token)) {
+      throw new Error("Check your expression.");
+    }
+    return Number(token);
+  }
+  const result = expression();
+  if (pos !== tokens.length || !Number.isFinite(result)) throw new Error("Invalid calculation.");
+  return Number(result.toPrecision(12)).toString();
+}
+
+/* Temporary local response until the larger AI is connected. */
+function demoReply(question) {
+  const q = question.trim();
+  const lower = q.toLowerCase();
+
+  if (/^(hi|hello|hey|yo)\b/i.test(q)) {
+    return "Hi! I'm Xevrune 6.0. The chat interface is working. I'm currently in local demo mode, so I don't have a full language model connected yet.";
+  }
+  if (/^(what is|calculate|compute)\s+/i.test(q) ||
+      /^[\d\s().+\-*/%]+$/.test(q)) {
+    try {
+      const expression = q
+        .replace(/^(what is|calculate|compute)\s+/i, "")
+        .replace(/[?=]$/,"").trim();
+      return "The result is **" + calculateExpression(expression) +
+        "**.\n\nFor more advanced questions, we'll connect the larger AI model later.";
+    } catch {}
+  }
+  if (lower.includes("memory")) {
+    return "You can save preferences using **My memories** in the sidebar. These notes stay in this browser only. They are not yet synced to an account or cloud database.";
+  }
+  if (lower.includes("who are you") || lower.includes("what are you")) {
+    return "I'm Xevrune 6.0, an AI website prototype. My interface, local chat history, memory notes, and calculator work in this version. A larger AI model still needs to be connected.";
+  }
+  if (lower.includes("help")) {
+    return "Here's what you can try in this prototype:\n\n- Ask a basic question to test the chat interface.\n- Use **My memories** to save a preference.\n- Open **Calculator** for arithmetic.\n- Switch between dark and light appearance.\n- Create separate conversations with **New chat**.\n\nThe advanced AI connection comes next.";
+  }
+  return "I received your message:\n\n“" + q + "”\n\nThe Xevrune 6.0 interface is working, but the advanced AI model isn't connected yet. When we connect your Cloudflare Worker, I'll send your question to the real model instead of using this demo response.";
+}
+
+/* The future server connection lives in one place. */
+async function requestAI(question) {
+  if (!WORKER_URL) return demoReply(question);
+
+  const response = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: question,
+      history: (activeChat()?.messages || []).slice(-12),
+      memories: memories.slice(-30)
+    })
+  });
+  if (!response.ok) throw new Error("AI service returned error " + response.status);
+  const data = await response.json();
+  const answer = data.reply || data.response || data.output;
+  if (typeof answer !== "string" || !answer.trim()) {
+    throw new Error("The AI service returned an unexpected response.");
+  }
+  return answer;
+}
+
+async function sendMessage(text) {
+  const question = text.trim();
+  if (!question || busy) return;
+  if (!activeChat()) createChat();
+  $("welcome")?.remove();
+  $("prompt").value = "";
+  resizePrompt();
+  addMessage("user", question);
+  setBusy(true);
+
+  try {
+    const answer = await requestAI(question);
+    addMessage("assistant", answer);
+  } catch (error) {
+    addMessage("assistant", "I couldn't reach the AI service. Please try again later.\n\nDetails: " + escapeError(error));
+  } finally {
+    setBusy(false);
+    $("prompt").focus();
+  }
+}
+function resizePrompt() {
+  const input = $("prompt");
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 150) + "px";
+}
+function toggleTheme() {
+  document.body.classList.toggle("light");
+  localStorage.setItem(THEME_KEY, document.body.classList.contains("light") ? "light" : "dark");
+}
+function openModal(id) { $(id).classList.add("open"); }
+function closeModal(id) { $(id).classList.remove("open"); }
+
+function renderMemories() {
+  const list = $("memoryList");
+  list.replaceChildren();
+  if (!memories.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No memories saved yet.";
+    list.append(empty);
+    return;
+  }
+  memories.forEach((memory, index) => {
+    const row = document.createElement("div");
+    row.className = "memory-row";
+    const text = document.createElement("span");
+    text.textContent = memory;
+    const remove = document.createElement("button");
+    remove.textContent = "Remove";
+    remove.setAttribute("aria-label", "Remove memory");
+    remove.onclick = () => {
+      memories.splice(index, 1);
+      save(MEMORY_KEY, memories);
+      renderMemories();
+      toast("Memory removed from this browser.");
+    };
+    row.append(text, remove);
+    list.append(row);
+  });
+}
+
+$("chatForm").addEventListener("submit", event => {
+  event.preventDefault();
+  sendMessage($("prompt").value);
+});
+$("prompt").addEventListener("input", resizePrompt);
+$("prompt").addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    $("chatForm").requestSubmit();
+  }
+});
+$("newChat").onclick = createChat;
+$("mobileNew").onclick = createChat;
+$("themeButton").onclick = toggleTheme;
+$("topTheme").onclick = toggleTheme;
+$("memoryButton").onclick = () => { renderMemories(); openModal("memoryModal"); };
+$("topMemory").onclick = () => { renderMemories(); openModal("memoryModal"); };
+$("closeMemory").onclick = () => closeModal("memoryModal");
+$("addMemory").onclick = () => {
+  const value = $("memoryInput").value.trim();
+  if (!value) { toast("Type a memory first."); return; }
+  if (memories.length >= 100) { toast("Memory limit reached. Remove a note first."); return; }
+  memories.push(value);
+  save(MEMORY_KEY, memories);
+  $("memoryInput").value = "";
+  renderMemories();
+  toast("Memory saved in this browser.");
+};
+$("calcButton").onclick = () => openModal("calcModal");
+$("closeCalc").onclick = () => closeModal("calcModal");
+$("calculate").onclick = () => {
+  try {
+    $("calcResult").textContent = "Result: " + calculateExpression($("calcInput").value);
+  } catch (error) {
+    $("calcResult").textContent = error.message;
+  }
+};
+$("calcInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") $("calculate").click();
+});
+document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+  backdrop.addEventListener("click", event => {
+    if (event.target === backdrop) backdrop.classList.remove("open");
+  });
+});
+document.querySelectorAll("[data-prompt]").forEach(button => {
+  button.addEventListener("click", () => sendMessage(button.dataset.prompt));
+});
+
+if (localStorage.getItem(THEME_KEY) === "light") document.body.classList.add("light");
+if (!activeChat()) createChat();
+else render();
+$("statusText").textContent = WORKER_URL ? "Connected to AI service" : "Local demo mode";
+</script>
+</body>
+</html>
