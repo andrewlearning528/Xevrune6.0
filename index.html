@@ -191,22 +191,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .memory-row { background: var(--panel2); padding: 10px; border-radius: 9px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
 .memory-row button { background: transparent; border: 0; color: var(--muted); }
 .toast { color: var(--good); font-size: 12px; min-height: 18px; margin-top: 7px; }
-
-/* Larger calculator answer display */
-#calcResult {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  padding: 16px;
-  margin-top: 16px;
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  min-height: 60px;
-}
-
 @media(max-width:720px) {
   .sidebar { display: none; }
   .topbar { height: 60px; padding: 0 13px; }
@@ -220,6 +204,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .suggestion { padding: 12px; }
   .composer-area { padding: 8px 10px 12px; }
   .message { gap: 9px; }
+}
+
+/* Larger, clearer calculator answer area */
+#calcResult {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  padding: 16px;
+  margin-top: 16px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-height: 60px;
 }
 </style>
 </head>
@@ -282,6 +281,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     </div>
   </main>
 </div>
+
 <div class="modal-backdrop" id="memoryModal" role="dialog" aria-modal="true" aria-labelledby="memoryTitle">
   <div class="modal">
     <h3 id="memoryTitle">✧ My memories</h3>
@@ -437,9 +437,9 @@ function escapeError(error) {
 }
 
 /*
-  Xevrune Advanced Math Engine
-  Safe recursive-descent parsers; deliberately never uses eval() or Function().
-  Supports arithmetic, powers, roots, common functions, factorials, and linear equations.
+  Advanced math engine:
+  supports arithmetic, powers, roots, common functions, factorials,
+  simplification of linear expressions, and linear equations.
 */
 function tokenizeMath(input) {
   const text = String(input).replace(/[×]/g, "*").replace(/[÷]/g, "/")
@@ -454,7 +454,9 @@ function tokenizeMath(input) {
 }
 function factorial(n) {
   if (!Number.isInteger(n) || n < 0 || n > 170) throw new Error("Factorial needs a whole number from 0 to 170.");
-  let out = 1; for (let i = 2; i <= n; i++) out *= i; return out;
+  let out = 1;
+  for (let i = 2; i <= n; i++) out *= i;
+  return out;
 }
 function formatMathNumber(n) {
   if (!Number.isFinite(n)) throw new Error("The result is not a finite number.");
@@ -462,71 +464,144 @@ function formatMathNumber(n) {
   return Number(n.toPrecision(12)).toString();
 }
 function evaluateArithmetic(input) {
-  const tokens = tokenizeMath(input); let pos = 0;
+  const tokens = tokenizeMath(input);
+  let pos = 0;
   const peek = () => tokens[pos];
   const take = () => tokens[pos++];
+
   function primary() {
     const t = peek();
-    if (t === "+" || t === "-") { take(); const v = primary(); return t === "-" ? -v : v; }
+    if (t === "+" || t === "-") {
+      take();
+      const v = primary();
+      return t === "-" ? -v : v;
+    }
     if (t === "(") {
-      take(); const v = expression();
+      take();
+      const v = expression();
       if (take() !== ")") throw new Error("Check your parentheses.");
       return v;
     }
-    if (t && /^\d/.test(t) || t && /^\.\d/.test(t)) { take(); return Number(t); }
+    if (t && (/^\d/.test(t) || /^\.\d/.test(t))) {
+      take();
+      return Number(t);
+    }
     if (t && /^[a-z_]+$/i.test(t)) {
       take();
       if (t === "pi") return Math.PI;
       if (t === "e") return Math.E;
       if (t === "x") throw new Error("For equations, use a form such as 2x + 3 = 9.");
+
       const functions = {
-        sqrt: x => { if (x < 0) throw new Error("Square roots of negative numbers are not real."); return Math.sqrt(x); },
-        abs: Math.abs, sin: Math.sin, cos: Math.cos, tan: Math.tan,
-        asin: Math.asin, acos: Math.acos, atan: Math.atan,
-        log: x => { if (x <= 0) throw new Error("log needs a positive number."); return Math.log10(x); },
-        ln: x => { if (x <= 0) throw new Error("ln needs a positive number."); return Math.log(x); },
-        exp: Math.exp, floor: Math.floor, ceil: Math.ceil, round: Math.round
+        sqrt: x => {
+          if (x < 0) throw new Error("Square roots of negative numbers are not real.");
+          return Math.sqrt(x);
+        },
+        abs: Math.abs,
+        sin: Math.sin,
+        cos: Math.cos,
+        tan: Math.tan,
+        asin: Math.asin,
+        acos: Math.acos,
+        atan: Math.atan,
+        log: x => {
+          if (x <= 0) throw new Error("log needs a positive number.");
+          return Math.log10(x);
+        },
+        ln: x => {
+          if (x <= 0) throw new Error("ln needs a positive number.");
+          return Math.log(x);
+        },
+        exp: Math.exp,
+        floor: Math.floor,
+        ceil: Math.ceil,
+        round: Math.round
       };
       if (!functions[t]) throw new Error("Unknown function or variable: " + t);
       let arg;
-      if (peek() === "(") { take(); arg = expression(); if (take() !== ")") throw new Error("Check the function parentheses."); }
-      else arg = primary();
+      if (peek() === "(") {
+        take();
+        arg = expression();
+        if (take() !== ")") throw new Error("Check the function parentheses.");
+      } else {
+        arg = primary();
+      }
       return functions[t](arg);
     }
     throw new Error("Expected a number, function, or parenthesis.");
   }
-  function postfix() { let v = primary(); while (peek() === "!") { take(); v = factorial(v); } return v; }
-  function power() { let v = postfix(); if (peek() === "^") { take(); const exp = unary(); v = Math.pow(v, exp); if (!Number.isFinite(v)) throw new Error("That power has no finite real result."); } return v; }
-  function unary() { if (peek() === "+") { take(); return unary(); } if (peek() === "-") { take(); return -unary(); } return power(); }
-  function term() {
-    let v = unary();
-    while (["*", "/", "%"].includes(peek()) || (peek() === "(" || /^[a-z_]+$/i.test(peek() || "") || /^\d/.test(peek() || ""))) {
-      let op = peek();
-      if (["*", "/", "%"].includes(op)) take(); else op = "*";
-      const r = unary();
-      if ((op === "/" || op === "%") && r === 0) throw new Error("Cannot divide by zero.");
-      v = op === "*" ? v*r : op === "/" ? v/r : v%r;
+  function postfix() {
+    let v = primary();
+    while (peek() === "!") {
+      take();
+      v = factorial(v);
     }
     return v;
   }
-  function expression() { let v = term(); while (peek() === "+" || peek() === "-") { const op = take(), r = term(); v = op === "+" ? v+r : v-r; } return v; }
+  function power() {
+    let v = postfix();
+    if (peek() === "^") {
+      take();
+      const exp = unary();
+      v = Math.pow(v, exp);
+      if (!Number.isFinite(v)) throw new Error("That power has no finite real result.");
+    }
+    return v;
+  }
+  function unary() {
+    if (peek() === "+") { take(); return unary(); }
+    if (peek() === "-") { take(); return -unary(); }
+    return power();
+  }
+  function term() {
+    let v = unary();
+    while (["*", "/", "%"].includes(peek()) ||
+      peek() === "(" ||
+      /^[a-z_]+$/i.test(peek() || "") ||
+      /^\d/.test(peek() || "")) {
+      let op = peek();
+      if (["*", "/", "%"].includes(op)) take();
+      else op = "*";
+      const r = unary();
+      if ((op === "/" || op === "%") && r === 0) throw new Error("Cannot divide by zero.");
+      v = op === "*" ? v * r : op === "/" ? v / r : v % r;
+    }
+    return v;
+  }
+  function expression() {
+    let v = term();
+    while (peek() === "+" || peek() === "-") {
+      const op = take(), r = term();
+      v = op === "+" ? v + r : v - r;
+    }
+    return v;
+  }
   const result = expression();
   if (pos !== tokens.length) throw new Error("Check the expression near “" + tokens[pos] + "”.");
   return result;
 }
-  /* Affine expression parser: each expression is represented as a*x + b. */
 function parseLinear(input) {
-  const tokens = tokenizeMath(input); let pos = 0;
+  const tokens = tokenizeMath(input);
+  let pos = 0;
   const peek = () => tokens[pos], take = () => tokens[pos++];
   const constant = n => ({a:0,b:n});
   const add = (x,y,sign=1) => ({a:x.a+sign*y.a,b:x.b+sign*y.b});
   const mul = (x,y) => {
-    if (Math.abs(x.a)>1e-12 && Math.abs(y.a)>1e-12) throw new Error("This tool currently simplifies linear expressions only (not x multiplied by x).");
+    if (Math.abs(x.a)>1e-12 && Math.abs(y.a)>1e-12)
+      throw new Error("This tool currently simplifies linear expressions only (not x multiplied by x).");
     return {a:x.a*y.b+y.a*x.b,b:x.b*y.b};
   };
   function primary() {
-    if (peek()==="+" || peek()==="-") { const sign=take()==="-"?-1:1, v=primary(); return {a:v.a*sign,b:v.b*sign}; }
-    if (peek()==="(") { take(); const v=expr(); if(take()!==")") throw new Error("Check your parentheses."); return v; }
+    if (peek()==="+" || peek()==="-") {
+      const sign=take()==="-"?-1:1, v=primary();
+      return {a:v.a*sign,b:v.b*sign};
+    }
+    if (peek()==="(") {
+      take();
+      const v=expr();
+      if(take()!==")") throw new Error("Check your parentheses.");
+      return v;
+    }
     const t=take();
     if(t==="x") return {a:1,b:0};
     if(t==="pi") return constant(Math.PI);
@@ -534,44 +609,85 @@ function parseLinear(input) {
     if(t && (/^\d/.test(t)||/^\.\d/.test(t))) return constant(Number(t));
     throw new Error("For algebra, use the variable x and linear operations.");
   }
-  function factor() { let v=primary(); while(peek()==="!") {take();if(v.a!==0)throw new Error("Factorial cannot contain x.");v=constant(factorial(v.b));} return v; }
-  function power() { let v=factor(); if(peek()==="^"){take();const e=primary();if(e.a!==0||![0,1].includes(e.b))throw new Error("For linear algebra, powers must be 0 or 1.");v=e.b===0?constant(1):v;}return v; }
-  function term() {
-    let v=power();
-    while(["*","/","%"].includes(peek()) || peek()==="(" || peek()==="x" || peek()==="pi" || peek()==="e" || /^\d/.test(peek()||"") || /^\.\d/.test(peek()||"")) {
-      let op=peek(); if(["*","/","%"].includes(op))take();else op="*";
-      const r=power();
-      if(op==="/"){if(r.a!==0)throw new Error("Cannot divide by an expression containing x.");if(r.b===0)throw new Error("Cannot divide by zero.");v={a:v.a/r.b,b:v.b/r.b};}
-      else if(op==="%"){if(v.a!==0||r.a!==0)throw new Error("Remainders are supported only for numbers.");if(r.b===0)throw new Error("Cannot divide by zero.");v=constant(v.b%r.b);}
-      else v=mul(v,r);
+  function factor() {
+    let v=primary();
+    while(peek()==="!") {
+      take();
+      if(v.a!==0) throw new Error("Factorial cannot contain x.");
+      v=constant(factorial(v.b));
     }
     return v;
   }
-  function expr(){let v=term();while(peek()==="+"||peek()==="-"){const op=take(),r=term();v=add(v,r,op==="+"?1:-1);}return v;}
-  const result=expr();if(pos!==tokens.length)throw new Error("Check the algebra expression near “"+tokens[pos]+"”.");return result;
+  function power() {
+    let v=factor();
+    if(peek()==="^") {
+      take();
+      const e=primary();
+      if(e.a!==0||![0,1].includes(e.b))
+        throw new Error("For linear algebra, powers must be 0 or 1.");
+      v=e.b===0?constant(1):v;
+    }
+    return v;
+  }
+  function term() {
+    let v=power();
+    while(["*","/","%"].includes(peek()) || peek()==="(" ||
+      peek()==="x" || peek()==="pi" || peek()==="e" ||
+      /^\d/.test(peek()||"") || /^\.\d/.test(peek()||"")) {
+      let op=peek();
+      if(["*","/","%"].includes(op)) take();
+      else op="*";
+      const r=power();
+      if(op==="/") {
+        if(r.a!==0) throw new Error("Cannot divide by an expression containing x.");
+        if(r.b===0) throw new Error("Cannot divide by zero.");
+        v={a:v.a/r.b,b:v.b/r.b};
+      } else if(op==="%") {
+        if(v.a!==0||r.a!==0) throw new Error("Remainders are supported only for numbers.");
+        if(r.b===0) throw new Error("Cannot divide by zero.");
+        v=constant(v.b%r.b);
+      } else v=mul(v,r);
+    }
+    return v;
+  }
+  function expr() {
+    let v=term();
+    while(peek()==="+"||peek()==="-") {
+      const op=take(),r=term();
+      v=add(v,r,op==="+"?1:-1);
+    }
+    return v;
+  }
+  const result=expr();
+  if(pos!==tokens.length) throw new Error("Check the algebra expression near “"+tokens[pos]+"”.");
+  return result;
 }
 function linearText(v) {
   const parts=[];
-  if(Math.abs(v.a)>1e-10) parts.push((Math.abs(v.a)===1?(v.a<0?"-":"") : formatMathNumber(v.a))+"x");
+  if(Math.abs(v.a)>1e-10)
+    parts.push((Math.abs(v.a)===1?(v.a<0?"-":""):formatMathNumber(v.a))+"x");
   if(Math.abs(v.b)>1e-10 || !parts.length) {
     const b=formatMathNumber(v.b);
     if(!parts.length) parts.push(b);
     else parts.push((v.b<0?" - ":" + ")+formatMathNumber(Math.abs(v.b)));
   }
-  return parts.join("").replace(/x(?=-)/g,"x");
+  return parts.join("");
 }
 function calculateMath(input) {
-  const s=String(input).trim().replace(/^simplify:\s*/i,"");
+  const original=String(input).trim();
+  const isSimplify=/^simplify:/i.test(original);
+  const s=original.replace(/^simplify:\s*/i,"");
   const eq=s.indexOf("=");
   if(eq>=0) {
     if(s.indexOf("=",eq+1)>=0) throw new Error("Enter one equation at a time.");
     const left=parseLinear(s.slice(0,eq)), right=parseLinear(s.slice(eq+1));
     const a=left.a-right.a, b=right.b-left.b;
-    if(Math.abs(a)<1e-10) return Math.abs(b)<1e-10 ? "Every real value of x is a solution." : "No solution.";
+    if(Math.abs(a)<1e-10)
+      return Math.abs(b)<1e-10 ? "Every real value of x is a solution." : "No solution.";
     const x=b/a;
     return "Solve: "+s+"\nSubtract terms to get "+formatMathNumber(a)+"x = "+formatMathNumber(b)+".\nAnswer: x = "+formatMathNumber(x);
   }
-  if(/^simplify:/i.test(s) || /[a-z]/i.test(s) && /\bx\b/i.test(s)) {
+  if(isSimplify || (/[a-z]/i.test(s) && /\bx\b/i.test(s))) {
     const v=parseLinear(s);
     return "Simplified: "+linearText(v);
   }
@@ -579,7 +695,6 @@ function calculateMath(input) {
 }
 function calculateExpression(input) { return calculateMath(input); }
 
-/* Temporary local response until the larger AI is connected. */
 function demoReply(question) {
   const q = question.trim();
   const lower = q.toLowerCase();
@@ -611,7 +726,6 @@ function demoReply(question) {
   return "I received your message:\n\n“" + q + "”\n\nThe Xevrune 6.0 interface is working, but the advanced AI model isn't connected yet. When we connect your Cloudflare Worker, I'll send your question to the real model instead of using this demo response.";
 }
 
-/* The future server connection lives in one place. */
 async function requestAI(question) {
   if (!WORKER_URL) return demoReply(question);
 
