@@ -191,6 +191,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .memory-row { background: var(--panel2); padding: 10px; border-radius: 9px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
 .memory-row button { background: transparent; border: 0; color: var(--muted); }
 .toast { color: var(--good); font-size: 12px; min-height: 18px; margin-top: 7px; }
+
+/* Larger calculator answer display */
+#calcResult {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  padding: 16px;
+  margin-top: 16px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-height: 60px;
+}
+
 @media(max-width:720px) {
   .sidebar { display: none; }
   .topbar { height: 60px; padding: 0 13px; }
@@ -254,7 +270,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
         </div>
       </div>
     </section>
-        <div class="composer-area">
+
+    <div class="composer-area">
       <div class="composer-wrap">
         <form class="composer" id="chatForm">
           <textarea id="prompt" rows="1" placeholder="Message Xevrune..." aria-label="Message Xevrune"></textarea>
@@ -265,7 +282,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     </div>
   </main>
 </div>
-
 <div class="modal-backdrop" id="memoryModal" role="dialog" aria-modal="true" aria-labelledby="memoryTitle">
   <div class="modal">
     <h3 id="memoryTitle">✧ My memories</h3>
