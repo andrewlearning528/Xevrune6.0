@@ -827,9 +827,9 @@ chatForm.addEventListener("submit", async (event) => {
 
   } catch (error) {
     addMessage(
-      "I couldn't connect to Xevrune AI. Please try again.",
-      "assistant"
-    );
+  "Xevrune error: " + error.message,
+  "assistant"
+);
   } finally {
     sendButton.disabled = false;
   }
