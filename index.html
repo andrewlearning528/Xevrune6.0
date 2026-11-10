@@ -782,7 +782,9 @@ function demoReply(message) {
   return "Thanks for your message! I'm Xevrune, a general-purpose assistant intended to help with questions, learning, writing, coding, brainstorming, and much more. This version is currently in demo mode, so I can't yet generate a detailed answer to every question. Connecting the AI backend will enable real open-ended conversations.";
 }
 
-chatForm.addEventListener("submit", (event) => {
+let chatHistory = [];
+
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const message = chatInput.value.trim();
@@ -791,9 +793,46 @@ chatForm.addEventListener("submit", (event) => {
   addMessage(message, "user");
   chatInput.value = "";
 
-  // The chat is general-purpose. It never automatically invokes the calculator.
-  const reply = demoReply(message);
-  addMessage(reply, "assistant");
+  const sendButton = chatForm.querySelector(".send-button");
+  sendButton.disabled = true;
+
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: message,
+        history: chatHistory
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI request failed");
+    }
+
+    const reply = data.reply || "I couldn't generate a response.";
+
+    chatHistory.push(
+      { role: "user", content: message },
+      { role: "assistant", content: reply }
+    );
+
+    chatHistory = chatHistory.slice(-8);
+
+    addMessage(reply, "assistant");
+
+  } catch (error) {
+    addMessage(
+      "I couldn't connect to Xevrune AI. Please try again.",
+      "assistant"
+    );
+  } finally {
+    sendButton.disabled = false;
+  }
 });
 
 chatInput.addEventListener("keydown", (event) => {
