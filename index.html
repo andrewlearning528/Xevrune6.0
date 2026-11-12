@@ -734,6 +734,7 @@ function addMessage(text, role) {
   message.append(label, body);
   chatMessages.appendChild(message);
   chatMessages.scrollTop = chatMessages.scrollHeight;
+  return body;
 }
 
 function demoReply(message) {
@@ -808,23 +809,78 @@ chatForm.addEventListener("submit", async (event) => {
       })
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || "AI request failed");
+  throw new Error("AI request failed: " + response.status);
+}
+
+if (!response.body) {
+  throw new Error("Streaming is unavailable.");
+}
+
+const assistantBody = addMessage("", "assistant");
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+let buffer = "";
+let reply = "";
+
+function processEvent(eventText) {
+  for (const line of eventText.split(/\r?\n/)) {
+    if (!line.startsWith("data:")) continue;
+
+    const payload = line.slice(5).trim();
+
+    if (!payload || payload === "[DONE]") continue;
+
+    try {
+      const chunk = JSON.parse(payload);
+      const piece =
+        chunk.response ??
+        chunk.choices?.[0]?.delta?.content ??
+        "";
+
+      if (typeof piece === "string" && piece) {
+        reply += piece;
+        assistantBody.textContent = reply;
+      }
+    } catch (error) {
+      // Ignore incomplete stream events.
     }
+  }
+}
 
-    const reply = data.reply || "I couldn't generate a response.";
+while (true) {
+  const { value, done } = await reader.read();
 
-    chatHistory.push(
-      { role: "user", content: message },
-      { role: "assistant", content: reply }
-    );
+  buffer += decoder.decode(value || new Uint8Array(), {
+    stream: !done
+  });
 
-    chatHistory = chatHistory.slice(-8);
+  const events = buffer.split(/\r?\n\r?\n/);
+  buffer = events.pop();
 
-    addMessage(reply, "assistant");
+  for (const eventText of events) {
+    processEvent(eventText);
+  }
 
+  if (done) break;
+}
+
+if (buffer.trim()) {
+  processEvent(buffer);
+}
+
+if (!reply) {
+  reply = "I couldn't generate a response.";
+  assistantBody.textContent = reply;
+}
+
+chatHistory.push(
+  { role: "user", content: message },
+  { role: "assistant", content: reply }
+);
+
+chatHistory = chatHistory.slice(-8);
   } catch (error) {
     addMessage(
   "Xevrune error: " + error.message,
